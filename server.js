@@ -16,18 +16,26 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET || 'Qwz5PXwqJY17MQq83SaLsxA1'
 });
 
-// Initialize Firebase Admin (if using Firebase)
+// Initialize Firebase Admin with environment variables
+let db = null;
 try {
-    const serviceAccount = require('./serviceAccountKey.json');
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('Firebase Admin initialized successfully');
+    if (process.env.FIREBASE_PRIVATE_KEY) {
+        admin.initializeApp({
+            credential: admin.credential.cert({
+                projectId: process.env.FIREBASE_PROJECT_ID || 'alh-perfume',
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+            })
+        });
+        db = admin.firestore();
+        console.log('Firebase Admin initialized successfully');
+    } else {
+        console.warn('Firebase Admin not initialized - FIREBASE_PRIVATE_KEY not found in environment variables');
+    }
 } catch (error) {
-    console.warn('Firebase Admin initialization skipped - serviceAccountKey.json not found');
+    console.error('Firebase Admin initialization error:', error.message);
+    // Continue without Firebase if initialization fails
 }
-
-const db = admin.firestore ? admin.firestore() : null;
 
 // Create Razorpay order
 app.post('/api/create-razorpay-order', async (req, res) => {
