@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: alhh-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: RAZORPAY_KEY_ID
+        value: rzp_live_RK9GfqxJRiUORI
+      - key: RAZORPAY_KEY_SECRET
+        value: Qwz5PXwqJY17MQq83SaLsxA1
+    plan: free

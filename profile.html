@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - ALH</title>
+    <link href="/dist/output.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Yeseva+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#FFFBEB',
+                            100: '#FEF3C7',
+                            200: '#FDE68A',
+                            300: '#FCD34D',
+                            400: '#FBBF24',
+                            500: '#F59E0B',
+                            600: '#D97706',
+                            700: '#B45309',
+                            800: '#92400E',
+                            900: '#78350F',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Yeseva One', 'cursive'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f8fafc;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        /* Custom components */
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #f3f4f6;
+        }
+        
+        .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            outline: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:focus {
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background-color: #d97706;
+            color: white;
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background-color: #b45309;
+        }
+        
+        .btn-outline {
+            border: 1px solid #d1d5db;
+            color: #374151;
+            background-color: white;
+        }
+        
+        .btn-outline:hover {
+            background-color: #f9fafb;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-['Inter']">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="index.html" class="text-2xl font-bold text-primary-600 font-display">ALH</a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:ml-10 md:flex md:items-center md:space-x-6">
+                    <a href="index.html" class="text-gray-700 hover:text-primary-600 px-3 py-2.5 text-sm font-medium transition-colors duration-200 rounded-md hover:bg-gray-50">Home</a>
+                    <a href="shop.html" class="text-gray-700 hover:text-primary-600 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-gray-50">Shop</a>
+                    <a href="categories.html" class="text-gray-700 hover:text-primary-600 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-gray-50">Categories</a>
+                    <a href="sale.html" class="text-gray-700 hover:text-primary-600 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-gray-50">Sale</a>
+                    <a href="contact.html" class="text-gray-700 hover:text-primary-600 px-3 py-2.5 text-sm font-medium rounded-md hover:bg-gray-50">Contact</a>
+                </div>
+                
+                <!-- Right side icons -->
+                <div class="flex items-center space-x-4">
+                    <!-- User Profile Dropdown -->
+                    <div class="relative ml-3">
+                        <div class="flex items-center space-x-2 cursor-pointer group">
+                            <div class="h-8 w-8 rounded-full bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center border border-amber-200">
+                                <i class="fas fa-user text-amber-600 text-sm"></i>
+                            </div>
+                            <span class="hidden md:inline text-sm font-medium text-gray-700">Jessica</span>
+                            <i class="fas fa-chevron-down text-xs text-gray-400 group-hover:text-primary-600 transition-transform duration-200 group-hover:translate-y-0.5"></i>
+                        </div>
+                        
+                        <!-- Dropdown menu -->
+                        <div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 group-hover:block">
+                            <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                <i class="fas fa-user-circle w-5 text-center mr-2 text-primary-500"></i>
+                                My Profile
+                            </a>
+                            <a href="orders.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                <i class="fas fa-shopping-bag w-5 text-center mr-2 text-gray-400"></i>
+                                My Orders
+                            </a>
+                            <a href="wishlist.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                <i class="fas fa-heart w-5 text-center mr-2 text-gray-400"></i>
+                                Wishlist
+                            </a>
+                            <div class="border-t border-gray-100 my-1"></div>
+                            <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                <i class="fas fa-sign-out-alt w-5 text-center mr-2"></i>
+                                Sign out
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile menu button -->
+                    <div class="md:hidden flex items-center">
+                        <button type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500" aria-expanded="false" id="mobile-menu-button">
+                            <span class="sr-only">Open main menu</span>
+                            <i class="fas fa-bars block h-6 w-6"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu, show/hide based on menu state. -->
+        <div class="md:hidden hidden" id="mobile-menu">
+            <div class="pt-2 pb-3 space-y-1 bg-white">
+                <a href="index.html" class="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600">Home</a>
+                <a href="shop.html" class="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600">Shop</a>
+                <a href="categories.html" class="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600">Categories</a>
+                <a href="sale.html" class="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600">Sale</a>
+                <a href="contact.html" class="block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-primary-600">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <div id="notification-container" class="fixed top-24 right-5 z-50"></div>
+
+
+    <div class="min-h-[calc(100vh-80px)] bg-gray-50">
+            <!-- User Profile Card -->
+            <div class="px-6 py-8 border-b border-gray-100 bg-gradient-to-br from-amber-50 to-yellow-50">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex flex-col items-center text-center">
+                    <div class="relative group mb-5">
+                        <div class="relative">
+                            <div class="h-32 w-32 rounded-full border-4 border-white shadow-lg overflow-hidden">
+                                <img id="sidebar-avatar" class="h-full w-full object-cover" src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="User avatar">
+                            </div>
+                            <label for="avatar-upload" class="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center text-white text-sm font-medium opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200">
+                                <i class="fas fa-camera text-xl"></i>
+                            </label>
+                            <input type="file" id="avatar-upload" class="hidden" accept="image/*">
+                        </div>
+                        <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
+                            <div class="bg-white rounded-full p-1.5 shadow-lg">
+                                <div class="w-8 h-8 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full flex items-center justify-center hover:from-amber-600 hover:to-yellow-600 transition-colors">
+                                    <i class="fas fa-pen text-white text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h2 id="sidebar-name" class="mt-3 text-2xl font-bold text-gray-800">Jessica Rabbit</h2>
+                    <p id="sidebar-email" class="text-sm text-gray-600 mt-1.5 truncate max-w-full px-6">jessica.rabbit@example.com</p>
+                    <div class="mt-3 flex items-center text-sm font-medium bg-white/60 px-4 py-1.5 rounded-full shadow-sm">
+                        <i class="fas fa-star text-amber-500 mr-2"></i>
+                        <span class="text-amber-700">Gold Member</span>
+                    </div>
+</div>
+            </div>
+            
+            <nav class="mt 2">
+                <a href="#" onclick="showSection('profile')" class="sidebar-item flex items-center px-6 py-3 text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-colors">
+                    <i class="fas fa-user-circle w-6 text-center mr-3 text-gray-500"></i>
+                    <span>My Profile</span>
+                </a>
+                <a href="#" onclick="showSection('orders')" class="sidebar-item flex items-center px-6 py-3 text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-colors">
+                    <i class="fas fa-shopping-bag w-6 text-center mr-3 text-gray-500"></i>
+                    <span>My Orders</span>
+                    <span class="ml-auto bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5 rounded-full">5</span>
+                </a>
+                <a href="#" onclick="showSection('wishlist')" class="sidebar-item flex items-center px-6 py-3 text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-colors">
+                    <i class="fas fa-heart w-6 text-center mr-3 text-gray-500"></i>
+                    <span>Wishlist</span>
+                    <span class="ml-auto bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5 rounded-full">12</span>
+                </a>
+                <a href="#" onclick="showSection('addresses')" class="sidebar-item flex items-center px-6 py-3 text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-colors">
+                    <i class="fas fa-map-marker-alt w-6 text-center mr-3 text-gray-500"></i>
+                    <span>Saved Addresses</span>
+                </a>
+<div class="border-t border-gray-200 mt-2">
+                    <a href="#" id="sidebar-signout" class="flex items-center px-6 py-3 text-red-600 hover:bg-red-50 transition-colors">
+                        <i class="fas fa-sign-out-alt w-6 text-center mr-3"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </nav>
+                <!-- Main Content Area -->
+                <div class="lg:col-span-3 space-y-6">
+                    <!-- Welcome Card -->
+                    <div class="bg-white rounded-2xl shadow-sm p-8 mb-8">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                            <div class="mb-4 md:mb-0">
+                                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Welcome back, <span class="text-primary-600">Jessica</span>! 👋</h1>
+                                <p class="text-gray-600 mt-2 text-base">Here's what's happening with your account today.</p>
+                            </div>
+                            <div>
+                                <button class="btn btn-primary px-6 py-3 text-base">
+                                    <i class="fas fa-plus mr-2.5"></i> New Order
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Information -->
+                    <div class="card overflow-hidden mb-8">
+                        <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h2 class="text-xl font-bold text-gray-900">Personal Information</h2>
+                            <button class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center group">
+                                <i class="fas fa-edit mr-2 text-primary-500 group-hover:scale-110 transition-transform"></i> 
+                                <span>Edit Profile</span>
+                            </button>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- First Name -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1.5">First Name</label>
+                                    <div class="relative">
+                                        <input type="text" value="Jessica" class="form-input bg-gray-50" disabled>
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <i class="fas fa-user text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Last Name -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Last Name</label>
+                                    <input type="text" value="Rabbit" class="form-input bg-gray-50" disabled>
+                                </div>
+                                
+                                <!-- Email -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Email Address</label>
+                                    <div class="relative">
+                                        <input type="email" value="jessica.rabbit@example.com" class="form-input bg-gray-50" disabled>
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <i class="fas fa-envelope text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Phone -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Phone Number</label>
+                                    <div class="relative">
+                                        <input type="tel" value="+1 (555) 123-4567" class="form-input bg-gray-50" disabled>
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <i class="fas fa-phone text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Date of Birth -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600 mb-1.5">Date of Birth</label>
+                                    <div class="relative">
+                                        <input type="date" value="1990-01-01" class="form-input bg-gray-50" disabled>
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <i class="fas fa-calendar text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Update Birthday Button -->
+                                <div class="flex items-end">
+                                    <button class="btn btn-outline w-full">
+                                        <i class="fas fa-calendar-alt mr-2"></i> Update Birthday
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- About Me Section -->
+                            <div class="mt-8 pt-6 border-t border-gray-100">
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">About Me</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                    <p class="text-gray-600 text-sm leading-relaxed">
+                                        Fashion enthusiast and trendsetter. Love exploring new styles and sharing fashion tips with the community. Always on the lookout for the latest trends and sustainable fashion choices.
+                                    </p>
+                                    <button class="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center">
+                                        <i class="fas fa-pen mr-1.5"></i> Edit Bio
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="mt-8 pt-6 border-t border-gray-100 flex justify-end space-x-3">
+                                <button class="btn btn-outline px-6">
+                                    Cancel
+                                </button>
+                                <button class="btn btn-primary px-6">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- View State -->
+                        <div id="profile-view-state">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
+                                    <p id="view-full-name" class="text-gray-900">Jessica Rabbit</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                                    <p id="view-email" class="text-gray-900">jessica.rabbit@example.com</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Phone Number</label>
+                                    <p id="view-phone" class="text-gray-900">+1 234 567 890</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Date of Birth</label>
+                                    <p id="view-birthdate" class="text-gray-900">January 15, 1990</p>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">Bio</label>
+                                    <p class="text-gray-900">Fragrance enthusiast and perfume collector. Love exploring new scents!</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edit State (hidden by default) -->
+                        <div id="profile-edit-state" class="hidden">
+                            <form id="profile-form">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="full-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                        <input type="text" id="full-name" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent" value="Jessica Rabbit">
+                                    </div>
+                                    <div>
+                                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                        <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent" value="jessica.rabbit@example.com">
+                                    </div>
+                                    <div>
+                                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                        <input type="tel" id="phone" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent" value="+1 234 567 890">
+                                    </div>
+                                    <div>
+                                        <label for="birthdate" class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                                        <input type="date" id="birthdate" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent" value="1990-01-15">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                                        <textarea id="bio" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent">Fragrance enthusiast and perfume collector. Love exploring new scents!</textarea>
+                                    </div>
+                                </div>
+                                <div class="mt-8 flex justify-end space-x-3">
+                                    <button type="button" id="cancel-edit-btn" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                        Cancel
+                                    </button>
+                                    <button type="button" id="save-changes" class="px-6 py-2 border border-transparent rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Account Security Section -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Account Security</h2>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <h3 class="font-medium">Password</h3>
+                                    <p class="text-sm text-gray-500">Last changed 3 months ago</p>
+                                </div>
+                                <button class="text-amber-600 hover:text-amber-700 text-sm font-medium" onclick="showSection('password')">Change</button>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <h3 class="font-medium">Two-Factor Authentication</h3>
+                                    <p class="text-sm text-gray-500">Add an extra layer of security</p>
+                                </div>
+                                <button class="text-amber-600 hover:text-amber-700 text-sm font-medium">Enable</button>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <h3 class="font-medium">Login Activity</h3>
+                                    <p class="text-sm text-gray-500">View your recent account activity</p>
+                                </div>
+                                <button class="text-amber-600 hover:text-amber-700 text-sm font-medium">View All</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connected Accounts Section -->
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Connected Accounts</h2>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-4 border border-gray-100 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-4">
+                                        <i class="fab fa-google"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium">Google</h3>
+                                        <p class="text-sm text-gray-500">Connected as jessica.rabbit@gmail.com</p>
+                                    </div>
+                                </div>
+                                <button class="text-red-600 hover:text-red-700 text-sm font-medium">Disconnect</button>
+                            </div>
+                            <div class="flex justify-between items-center p-4 border border-gray-100 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white mr-4">
+                                        <i class="fab fa-facebook-f"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium">Facebook</h3>
+                                        <p class="text-sm text-gray-500">Not connected</p>
+                                    </div>
+                                </div>
+                                <button class="text-amber-600 hover:text-amber-700 text-sm font-medium">Connect</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Password Settings Section -->
+                <div id="password-section" class="section-content hidden">
+                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Change Password</h2>
+                        <form id="password-form" class="max-w-2xl">
+                            <div class="space-y-6">
+                                <div>
+                                    <label for="current-password" class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                                    <div class="relative">
+                                        <input type="password" id="current-password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                                        <button type="button" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600" id="toggle-current-password">
+                                            <i class="far fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                    <div class="relative">
+                                        <input type="password" id="new-password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                                        <button type="button" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600" id="toggle-new-password">
+                                            <i class="far fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters long</p>
+                                </div>
+                                <div>
+                                    <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                    <div class="relative">
+                                        <input type="password" id="confirm-password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                                        <button type="button" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600" id="toggle-confirm-password">
+                                            <i class="far fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-8 flex justify-end space-x-3">
+                                <button type="button" onclick="showSection('profile')" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                    Cancel
+                                </button>
+                                <button type="button" id="update-password" class="px-6 py-2 border border-transparent rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                    Update Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Password Strength Meter -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Password Strength</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                <span class="text-sm text-gray-700">At least 8 characters</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
+                                <span class="text-sm text-gray-700">At least 1 number</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 rounded-full bg-gray-300 mr-2"></div>
+                                <span class="text-sm text-gray-500">At least 1 special character</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Orders Section -->
+                <div id="orders-section" class="section-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">My Orders</h2>
+                        <div class="relative">
+                            <select class="appearance-none bg-white border border-gray-300 rounded-md pl-4 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+                                <option>Last 30 days</option>
+                                <option>Last 3 months</option>
+                                <option>2023</option>
+                                <option>2022</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Card -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6 order-card">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 pb-4 border-b border-gray-100">
+                            <div class="flex items-center">
+                                <span class="text-sm text-gray-500 mr-4">ORDER #12345</span>
+                                <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">Delivered</span>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-2 md:mt-0">Placed on 15 Sep 2023</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                            <div class="flex-shrink-0">
+                                <img src="https://via.placeholder.com/80" alt="Product" class="w-20 h-20 object-contain border rounded">
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-900">Ramzaan Eau de Parfum</h3>
+                                <p class="text-sm text-gray-500">100ml</p>
+                                <p class="text-amber-600 font-medium mt-1">₹4,999</p>
+                            </div>
+                            <div class="flex space-x-2 w-full md:w-auto">
+                                <button class="flex-1 md:flex-none px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                    Track Order
+                                </button>
+                                <button class="flex-1 md:flex-none px-4 py-2 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                    Buy Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Card 2 -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6 order-card">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 pb-4 border-b border-gray-100">
+                            <div class="flex items-center">
+                                <span class="text-sm text-gray-500 mr-4">ORDER #12344</span>
+                                <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">Shipped</span>
+                            </div>
+                            <div class="text-sm text-gray-500 mt-2 md:mt-0">Placed on 10 Sep 2023</div>
+                        </div>
+                        <div class="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                            <div class="flex-shrink-0">
+                                <img src="https://via.placeholder.com/80" alt="Product" class="w-20 h-20 object-contain border rounded">
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-gray-900">Noor Eau de Toilette</h3>
+                                <p class="text-sm text-gray-500">50ml</p>
+                                <p class="text-amber-600 font-medium mt-1">₹3,499</p>
+                            </div>
+                            <div class="flex space-x-2 w-full md:w-auto">
+                                <button class="flex-1 md:flex-none px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                    Track Order
+                                </button>
+                                <button class="flex-1 md:flex-none px-4 py-2 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                    Buy Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-8">
+                        <button class="px-6 py-2 border border-amber-600 text-amber-600 rounded-md hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                            View All Orders
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Addresses Section -->
+                <div id="addresses-section" class="section-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Saved Addresses</h2>
+                        <button class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                            <i class="fas fa-plus mr-1"></i> Add New Address
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Address Card 1 -->
+                        <div class="border border-gray-200 rounded-xl p-5 hover:border-amber-400 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <h3 class="font-medium text-gray-900">Home</h3>
+                                        <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Default</span>
+                                    </div>
+                                    <p class="text-gray-700">Jessica Rabbit</p>
+                                    <p class="text-gray-600">123 Perfume Street, Apt 4B</p>
+                                    <p class="text-gray-600">Mumbai, Maharashtra 400001</p>
+                                    <p class="text-gray-600">Phone: +1 234 567 890</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="text-gray-400 hover:text-amber-600 p-1">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-600 p-1">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100">
+                                <button class="text-amber-600 hover:text-amber-700 text-sm font-medium">
+                                    Set as default
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Address Card 2 -->
+                        <div class="border border-gray-200 rounded-xl p-5 hover:border-amber-400 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <h3 class="font-medium text-gray-900">Work</h3>
+                                    </div>
+                                    <p class="text-gray-700">Jessica Rabbit</p>
+                                    <p class="text-gray-600">456 Office Road, 10th Floor</p>
+                                    <p class="text-gray-600">Mumbai, Maharashtra 400001</p>
+                                    <p class="text-gray-600">Phone: +1 234 567 891</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="text-gray-400 hover:text-amber-600 p-1">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-red-600 p-1">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-100">
+                                <button class="text-amber-600 hover:text-amber-700 text-sm font-medium">
+                                    Set as default
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wishlist Section -->
+                <div id="wishlist-section" class="section-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">My Wishlist</h2>
+                        <div class="text-sm text-gray-500">12 items</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <!-- Wishlist Item 1 -->
+                        <div class="wishlist-item border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                            <div class="relative">
+                                <img src="https://via.placeholder.com/300x300" alt="Product" class="w-full h-48 object-cover">
+                                <button class="absolute top-2 right-2 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-red-500 hover:bg-red-50">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                                <div class="absolute bottom-2 left-2">
+                                    <span class="bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5 rounded">20% OFF</span>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-medium text-gray-900 mb-1">Ramzaan Eau de Parfum</h3>
+                                <div class="flex items-center mb-2">
+                                    <div class="flex text-amber-400">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star-half-alt"></i>
+                                    </div>
+                                    <span class="text-xs text-gray-500 ml-1">(24)</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="text-amber-600 font-semibold">₹4,999</span>
+                                        <span class="text-xs text-gray-500 line-through ml-1">₹6,249</span>
+                                    </div>
+                                    <button class="wishlist-actions px-3 py-1.5 bg-amber-600 text-white text-sm rounded hover:bg-amber-700">
+                                        Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Section -->
+                <div id="payments-section" class="section-content hidden">
+                    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800">Payment Methods</h2>
+                            <button class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                                <i class="fas fa-plus mr-1"></i> Add New Card
+                            </button>
+                        </div>
+
+                        <!-- Saved Cards -->
+                        <div class="space-y-4">
+                            <!-- Card 1 -->
+                            <div class="border border-gray-200 rounded-xl p-5">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-4">
+                                            <i class="fab fa-cc-visa text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-medium">Visa ending in 4242</h3>
+                                            <p class="text-sm text-gray-500">Expires 04/25</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="text-amber-600 hover:text-amber-700 p-1">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-red-600 hover:text-red-700 p-1">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2 -->
+                            <div class="border border-gray-200 rounded-xl p-5">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-4">
+                                            <i class="fab fa-cc-mastercard text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-medium">Mastercard ending in 5555</h3>
+                                            <p class="text-sm text-gray-500">Expires 08/24</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="text-amber-600 hover:text-amber-700 p-1">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="text-red-600 hover:text-red-700 p-1">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- UPI IDs -->
+                        <div class="mt-8">
+                            <h3 class="text-lg font-medium text-gray-800 mb-4">UPI IDs</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <h4 class="font-medium">jessica.rabbit@upi</h4>
+                                        <p class="text-sm text-gray-500">Verified</p>
+                                    </div>
+                                    <button class="text-red-600 hover:text-red-700 text-sm font-medium">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Preferences -->
+                    <div class="bg-white rounded-xl shadow-sm p-6">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Payment Preferences</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-medium">Save payment methods</h4>
+                                    <p class="text-sm text-gray-500">Save your payment methods for faster checkout</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div id="notifications-section" class="section-content hidden mt-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Notification Preferences</h2>
+                        <div class="space-y-4">
+                            <label class="flex items-center justify-between">
+                                <span>Email notifications for order updates</span>
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-gold rounded focus:ring-gold-dark" checked>
+                            </label>
+                            <label class="flex items-center justify-between">
+                                <span>Email notifications for promotions</span>
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-gold rounded focus:ring-gold-dark">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">My Wishlist</h2>
+                        <div class="text-center text-gray-500 py-8">
+                            <p>Your wishlist is empty.</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Change Password</h2>
+                        <form id="password-form">
+                            <div class="space-y-6">
+                                <div>
+                                    <label for="current-password" class="block text-sm font-medium text-gray-700">Current Password</label>
+                                    <input type="password" id="current-password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-gold focus:border-gold sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="new-password" class="block text-sm font-medium text-gray-700">New Password</label>
+                                    <input type="password" id="new-password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-gold focus:border-gold sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                                    <input type="password" id="confirm-password" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-gold focus:border-gold sm:text-sm">
+                                </div>
+                            </div>
+                            <div class="mt-8 flex justify-end">
+                                <button type="button" id="update-password" class="bg-gold text-black font-bold py-3 px-6 rounded-lg hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105">Update Password</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="/js/profile.js"></script>
+</body>
+</html>

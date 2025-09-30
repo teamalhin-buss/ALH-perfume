@@ -1,0 +1,30 @@
+{
+  "name": "alhh",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
+    "build:prod": "NODE_ENV=production tailwindcss -i ./src/input.css -o ./dist/output.css --minify"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "ALH - Ramzaan Perfume",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "firebase": "^12.3.0",
+    "firebase-admin": "^13.5.0",
+    "razorpay": "^2.9.6"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "live-server": "^1.2.2",
+    "nodemon": "^3.0.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13"
+  }
+}

@@ -1,0 +1,372 @@
+// Import Firebase auth
+import { auth } from './firebase-init.js';
+import { showSuccess, showError, showInfo } from './notifications.js';
+
+// Import Firebase auth functions
+import { 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signInWithPopup, 
+    GoogleAuthProvider, 
+    signOut, 
+    onAuthStateChanged 
+} from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+
+// Auth UI State Management
+const authUI = {
+    // DOM Elements
+    elements: {
+        // Modals
+        loginModal: document.getElementById('login-modal'),
+        registerModal: document.getElementById('register-modal'),
+        
+        // Buttons
+        loginButton: document.getElementById('login-btn'),
+        registerButton: document.getElementById('register-btn'),
+        logoutButton: document.getElementById('logout-btn'),
+        closeLoginModal: document.getElementById('close-login-modal'),
+        closeRegisterModal: document.getElementById('close-register-modal'),
+        showRegister: document.getElementById('show-register'),
+        showLogin: document.getElementById('show-login'),
+        googleLogin: document.getElementById('google-login'),
+        
+        // Forms
+        loginForm: document.getElementById('login-form'),
+        registerForm: document.getElementById('register-form'),
+        
+        // Auth State Containers
+        authButtons: document.getElementById('auth-buttons'),
+        userMenu: document.getElementById('user-menu')
+    },
+    
+    // Initialize auth UI
+    async init() {
+        try {
+            const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js');
+            
+            // Set up auth state observer
+            onAuthStateChanged(auth, (user) => {
+                console.log('Auth state changed:', user ? 'User signed in' : 'User signed out');
+                if (user) {
+                    // User is signed in
+                    console.log('User signed in:', user.uid, user.email);
+                    this.updateAuthUI(user);
+                    this.hideModal('login');
+                    this.hideModal('register');
+                } else {
+                    // User is signed out
+                    console.log('No user signed in');
+                    this.updateAuthUI(null);
+                }
+            });
+            
+            // Set up event listeners
+            this.setupEventListeners();
+            
+        } catch (error) {
+            console.error('Error initializing auth UI:', error);
+        }
+    },
+    
+    // Set up event listeners
+    setupEventListeners() {
+        try {
+            // Login button
+            if (this.elements.loginButton) {
+                this.elements.loginButton.addEventListener('click', () => this.showModal('login'));
+            }
+            
+            // Register button
+            if (this.elements.registerButton) {
+                this.elements.registerButton.addEventListener('click', () => this.showModal('register'));
+            }
+            
+            // Show register link
+            if (this.elements.showRegister) {
+                this.elements.showRegister.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.hideModal('login');
+                    this.showModal('register');
+                });
+            }
+            
+            // Show login link
+            if (this.elements.showLogin) {
+                this.elements.showLogin.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.hideModal('register');
+                    this.showModal('login');
+                });
+            }
+            
+            // Close login modal
+            if (this.elements.closeLoginModal) {
+                this.elements.closeLoginModal.addEventListener('click', () => this.hideModal('login'));
+            }
+            
+            // Close register modal
+            if (this.elements.closeRegisterModal) {
+                this.elements.closeRegisterModal.addEventListener('click', () => this.hideModal('register'));
+            }
+            
+            // Logout button
+            if (this.elements.logoutButton) {
+                this.elements.logoutButton.addEventListener('click', (e) => this.handleLogout(e));
+            }
+            
+            // Google login
+            if (this.elements.googleLogin) {
+                this.elements.googleLogin.addEventListener('click', (e) => this.handleGoogleLogin(e));
+            }
+            
+            // Form Submissions
+            if (this.elements.loginForm) {
+                this.elements.loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+            }
+            
+            if (this.elements.registerForm) {
+                this.elements.registerForm.addEventListener('submit', (e) => this.handleRegister(e));
+            }
+            
+            // Initialize auth state
+            this.updateAuthUI();
+            
+        } catch (error) {
+            console.error('Error in setupEventListeners:', error);
+        }
+    },
+    
+    // Toggle user dropdown
+    toggleDropdown() {
+        this.elements.userDropdown.classList.toggle('hidden');
+    },
+    
+    // Show modal
+    showModal(modalType) {
+        const modal = modalType === 'login' ? this.elements.loginModal : this.elements.registerModal;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    },
+    
+    // Hide modal
+    hideModal(modalType) {
+        const modal = modalType === 'login' ? this.elements.loginModal : this.elements.registerModal;
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    },
+    
+    // Update UI based on auth state
+    updateAuthUI(user = null) {
+        if (user) {
+            // User is signed in
+            this.elements.authButtons?.classList.add('hidden');
+            this.elements.userMenu?.classList.remove('hidden');
+            
+            // Update user info in the menu
+            const userNameElement = this.elements.userMenu?.querySelector('.user-name');
+            const userEmailElement = this.elements.userMenu?.querySelector('.user-email');
+            const userAvatarElement = this.elements.userMenu?.querySelector('.user-avatar');
+            
+            if (userNameElement) {
+                userNameElement.textContent = user.displayName || 'User';
+            }
+            if (userEmailElement) {
+                userEmailElement.textContent = user.email || '';
+            }
+            if (userAvatarElement) {
+                if (user.photoURL) {
+                    userAvatarElement.src = user.photoURL;
+                    userAvatarElement.alt = user.displayName || 'User';
+                    userAvatarElement.classList.remove('hidden');
+                } else {
+                    userAvatarElement.classList.add('hidden');
+                }
+            }
+        } else {
+            // User is signed out
+            this.elements.authButtons?.classList.remove('hidden');
+            this.elements.userMenu?.classList.add('hidden');
+        }
+    },
+    
+    // Show error message
+    showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+            setTimeout(() => element.classList.add('hidden'), 5000);
+        }
+    },
+    
+    // Handle login form submission
+    // Handle registration form submission
+    async handleRegister(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('register-name').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const confirmPassword = document.getElementById('register-confirm-password').value;
+        
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            const errorMsg = 'Passwords do not match';
+            notify({ type: 'error', message: errorMsg });
+            return;
+        }
+        
+        // Show loading state
+        const registerBtn = document.getElementById('register-btn');
+        const originalText = registerBtn.innerHTML;
+        registerBtn.disabled = true;
+        registerBtn.innerHTML = '<span class="loading">Creating account...</span>';
+        
+        try {
+            // Import the updateProfile function
+            const { updateProfile } = await import('https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js');
+            
+            // Create user with email and password
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            
+            // Update user profile with display name
+            await updateProfile(user, {
+                displayName: name
+            });
+            
+            notify({ type: 'success', message: 'Account created successfully! Welcome to ALH Perfumes!' });
+            this.hideModal('register');
+            
+        } catch (error) {
+            console.error('Registration error:', error);
+            const errorMessage = this.getAuthErrorMessage(error.code) || 'Failed to create account. Please try again.';
+            notify({ type: 'error', message: errorMessage });
+        } finally {
+            // Reset button state
+            registerBtn.disabled = false;
+            registerBtn.innerHTML = originalText;
+        }
+    },
+    
+    // Handle registration form submission
+    async handleRegister(e) {
+{{ ... }}
+    async handleLogout(e) {
+        if (e) e.preventDefault();
+        
+        try {
+            const { signOut } = await import('https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js');
+            await signOut(auth);
+            notify({ type: 'info', message: 'You have been signed out. See you soon!' });
+        } catch (error) {
+            const errorMessage = 'Failed to sign out. Please try again.';
+            notify({ type: 'error', message: errorMessage });
+            console.error('Sign out error:', error);
+        }
+            'auth/email-already-in-use': 'This email is already in use.',
+            'auth/invalid-email': 'Please enter a valid email address.',
+            'auth/operation-not-allowed': 'This operation is not allowed.',
+            'auth/weak-password': 'Password should be at least 6 characters.',
+            'auth/user-not-found': 'No user found with this email.',
+            'auth/wrong-password': 'Incorrect password. Please try again.',
+            'auth/popup-closed-by-user': 'Sign in was cancelled.',
+            'auth/cancelled-popup-request': 'Sign in was cancelled.',
+            'auth/popup-blocked': 'Popup was blocked. Please allow popups for this site.'
+        };
+        
+        return messages[errorCode] || 'An error occurred. Please try again.';
+    },
+
+    // Initialize account dropdown
+    initAccountDropdown() {
+        const accountButton = document.getElementById('account-button');
+        const accountMenu = document.getElementById('account-menu');
+        if (!accountButton || !accountMenu) return;
+        
+        let isOpen = false;
+        let closeTimeout;
+
+        // Handle clicks outside the dropdown
+        const handleClickOutside = (e) => {
+            if (!accountButton.contains(e.target) && !accountMenu.contains(e.target)) {
+                toggleDropdown(false);
+            }
+        };
+
+        // Toggle dropdown
+        const toggleDropdown = (show) => {
+            clearTimeout(closeTimeout);
+            if (show === undefined) {
+                isOpen = !isOpen;
+            } else {
+                isOpen = show;
+            }
+
+            if (isOpen) {
+                accountMenu.classList.remove('opacity-0', 'scale-95');
+                accountMenu.classList.add('opacity-100', 'scale-100');
+                document.addEventListener('click', handleClickOutside);
+            } else {
+                accountMenu.classList.remove('opacity-100', 'scale-100');
+                accountMenu.classList.add('opacity-0', 'scale-95');
+                closeTimeout = setTimeout(() => {
+                    if (!isOpen) {
+                        document.removeEventListener('click', handleClickOutside);
+                    }
+                }, 150);
+            }
+        };
+
+        // Toggle on button click
+        accountButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown();
+        });
+
+        // Prevent dropdown from closing when clicking inside it
+        accountMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Close dropdown when pressing Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isOpen) {
+                toggleDropdown(false);
+            }
+        });
+    }
+};
+
+// Initialize auth UI when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Set up auth state observer
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        // Update UI based on auth state
+        if (user) {
+            console.log('User is signed in:', user);
+            // Update the UI with user info
+            const userEmail = document.getElementById('user-email');
+            const guestMenu = document.getElementById('guest-menu');
+            const userMenu = document.getElementById('user-menu');
+            
+            if (userEmail) userEmail.textContent = user.email || 'user@example.com';
+            if (guestMenu) guestMenu.classList.add('hidden');
+            if (userMenu) userMenu.classList.remove('hidden');
+        } else {
+            console.log('User is signed out');
+            const guestMenu = document.getElementById('guest-menu');
+            const userMenu = document.getElementById('user-menu');
+            
+            if (guestMenu) guestMenu.classList.remove('hidden');
+            if (userMenu) userMenu.classList.add('hidden');
+        }
+    });
+
+    // Initialize UI
+    authUI.init();
+    authUI.initAccountDropdown();
+
+    // Cleanup function
+    return () => unsubscribe();
+});
