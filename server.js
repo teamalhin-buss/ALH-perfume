@@ -2,31 +2,56 @@
 const fs = require('fs');
 const path = require('path');
 
-// 1. Load environment variables with explicit path
-const envPath = path.resolve(__dirname, '.env');
+// Environment variable loading logic
+function loadEnvironment() {
+    // Check if running in production (Render sets NODE_ENV=production)
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    if (!isProduction) {
+        // In development, try to load from .env file
+        const envPath = path.resolve(__dirname, '.env');
+        if (fs.existsSync(envPath)) {
+            console.log('🔧 Loading .env file for development');
+            require('dotenv').config({ path: envPath });
+        } else {
+            console.warn('⚠️  No .env file found, using system environment variables');
+        }
+    }
 
-// 2. Check if .env file exists
-if (!fs.existsSync(envPath)) {
-    console.error('❌ Error: .env file not found at:', envPath);
-    console.log('Current working directory:', process.cwd());
-    console.log('Directory contents:', fs.readdirSync(__dirname).join(', '));
-    process.exit(1);
+    // Verify required environment variables
+    const requiredVars = [
+        'FIREBASE_PROJECT_ID',
+        'FIREBASE_CLIENT_EMAIL',
+        'FIREBASE_PRIVATE_KEY',
+        'FIREBASE_PRIVATE_KEY_ID',
+        'FIREBASE_CLIENT_CERT_URL',
+        'RAZORPAY_KEY_ID',
+        'RAZORPAY_KEY_SECRET'
+    ];
+
+    const missingVars = requiredVars.filter(varName => !process.env[varName]);
+    
+    if (missingVars.length > 0) {
+        console.error('❌ Missing required environment variables:', missingVars.join(', '));
+        if (isProduction) {
+            console.error('Please set these variables in your Render dashboard under Environment');
+        } else {
+            console.error('Please create a .env file with these variables');
+        }
+        process.exit(1);
+    }
+
+    // Log environment status
+    console.log('✅ Environment variables loaded');
+    console.log('🌐 Environment:', process.env.NODE_ENV || 'development');
+    console.log('🏢 Firebase Project:', process.env.FIREBASE_PROJECT_ID);
+    console.log('📧 Firebase Client Email:', process.env.FIREBASE_CLIENT_EMAIL);
+    console.log('🔑 Firebase Private Key:', process.env.FIREBASE_PRIVATE_KEY ? '*** (loaded)' : 'Not set');
+    console.log('💳 Razorpay Key ID:', process.env.RAZORPAY_KEY_ID ? '***' + process.env.RAZORPAY_KEY_ID.slice(-4) : 'Not set');
 }
 
-// 3. Load environment variables
-console.log('Loading .env file from:', envPath);
-const envConfig = require('dotenv').config({ path: envPath });
-
-if (envConfig.error) {
-    console.error('❌ Error loading .env file:', envConfig.error);
-    process.exit(1);
-}
-
-// 4. Verify loaded environment variables
-console.log('Environment variables loaded successfully');
-console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID ? '***' + process.env.FIREBASE_PROJECT_ID.slice(-4) : 'Not set');
-console.log('FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL ? '***' + process.env.FIREBASE_CLIENT_EMAIL.split('@')[1] : 'Not set');
-console.log('FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY ? '*** (private key loaded)' : 'Not set');
+// Load environment variables
+loadEnvironment();
 
 // Core dependencies
 const express = require('express');
