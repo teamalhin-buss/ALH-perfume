@@ -18,29 +18,56 @@ const razorpay = new Razorpay({
 
 // Initialize Firebase Admin with environment variables
 let db = null;
-try {
-    if (process.env.FIREBASE_PRIVATE_KEY) {
-        admin.initializeApp({
-            credential: admin.credential.cert({
-                projectId: process.env.FIREBASE_PROJECT_ID || 'alh-perfume',
-                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-            })
-        });
+let firebaseInitialized = false;
+
+async function initializeFirebase() {
+    if (firebaseInitialized) return true;
+    
+    try {
+        if (!process.env.FIREBASE_PRIVATE_KEY) {
+            console.warn('Firebase Admin not initialized - FIREBASE_PRIVATE_KEY not found in environment variables');
+            return false;
+        }
+
+        console.log('Initializing Firebase Admin...');
+        
+        const serviceAccount = {
+            projectId: process.env.FIREBASE_PROJECT_ID || 'alh-perfume',
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\\\n/g, '\n')
+        };
+
+        // Check if Firebase app is already initialized
+        if (admin.apps.length === 0) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+        }
+
+        // Test the connection
         db = admin.firestore();
-        console.log('Firebase Admin initialized successfully');
-    } else {
-        console.warn('Firebase Admin not initialized - FIREBASE_PRIVATE_KEY not found in environment variables');
+        await db.collection('test').doc('connection-test').get();
+        
+        console.log('✅ Firebase Admin initialized successfully');
+        firebaseInitialized = true;
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Firebase Admin initialization error:', error.message);
+        db = null;
+        return false;
     }
-} catch (error) {
-    console.error('Firebase Admin initialization error:', error.message);
-    // Continue without Firebase if initialization fails
 }
+
+// Initialize Firebase when the server starts
+initializeFirebase().catch(error => {
+    console.error('Failed to initialize Firebase:', error);
+});
 
 // Create Razorpay order
 app.post('/api/create-razorpay-order', async (req, res) => {
     try {
-        const { amount, currency = 'INR', receipt } = req.body;
+        const { amount, currency = 'INR', receipt, orderData = {} } = req.body;
         
         if (!amount || isNaN(amount)) {
             return res.status(400).json({ error: 'Invalid amount' });
@@ -53,7 +80,26 @@ app.post('/api/create-razorpay-order', async (req, res) => {
             payment_capture: 1 // Auto capture payment
         };
 
+        // Create Razorpay order
         const order = await razorpay.orders.create(options);
+        
+        // If Firebase is available, store the order
+        if (db) {
+            try {
+                await db.collection('orders').doc(order.id).set({
+                    ...orderData,
+                    razorpayOrderId: order.id,
+                    status: 'created',
+                    amount: order.amount,
+                    currency: order.currency,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (firebaseError) {
+                console.error('Warning: Failed to save order to Firestore:', firebaseError);
+                // Continue even if Firestore save fails
+            }
+        }
         
         res.json({
             id: order.id,
@@ -72,15 +118,19 @@ app.post('/api/create-razorpay-order', async (req, res) => {
 
 // Verify payment
 app.post('/api/verify-payment', async (req, res) => {
+    const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+    
+    // Validate required parameters
+    if (!orderId || !razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
+        console.error('Missing required parameters:', { orderId, razorpayPaymentId: !!razorpayPaymentId, razorpayOrderId: !!razorpayOrderId });
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Missing required parameters. Need orderId, razorpayPaymentId, razorpayOrderId, and razorpaySignature' 
+        });
+    }
+
     try {
-        const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-        
-        if (!orderId || !razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
-            return res.status(400).json({ 
-                success: false, 
-                error: 'Missing required parameters' 
-            });
-        }
+        console.log(`Verifying payment for order: ${orderId}`);
         
         // Verify signature
         const text = `${razorpayOrderId}|${razorpayPaymentId}`;
@@ -90,44 +140,76 @@ app.post('/api/verify-payment', async (req, res) => {
             .digest('hex');
 
         if (generatedSignature !== razorpaySignature) {
-            console.error('Invalid signature received');
+            console.error('❌ Invalid signature received', {
+                received: razorpaySignature,
+                expected: generatedSignature,
+                text
+            });
+            
+            // Log failed verification attempt
+            if (db) {
+                try {
+                    await db.collection('payment_attempts').add({
+                        orderId,
+                        razorpayOrderId,
+                        razorpayPaymentId,
+                        status: 'signature_mismatch',
+                        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                        receivedSignature: razorpaySignature,
+                        expectedSignature: generatedSignature
+                    });
+                } catch (logError) {
+                    console.error('Failed to log failed verification attempt:', logError);
+                }
+            }
+            
             return res.status(400).json({ 
                 success: false, 
-                error: 'Invalid signature' 
+                error: 'Invalid payment signature' 
             });
         }
 
-        try {
-            // Update order status in Firestore if available
-            if (db) {
+        console.log(`✅ Payment signature verified for order: ${orderId}`);
+        
+        // If Firebase is available, update the order
+        if (db) {
+            try {
                 const orderRef = db.collection('orders').doc(orderId);
-                await orderRef.update({
+                const updateData = {
                     'payment.status': 'completed',
                     'payment.razorpayPaymentId': razorpayPaymentId,
                     'payment.razorpayOrderId': razorpayOrderId,
+                    'payment.verifiedAt': admin.firestore.FieldValue.serverTimestamp(),
                     'status': 'paid',
                     'updatedAt': admin.firestore.FieldValue.serverTimestamp()
+                };
+                
+                await orderRef.update(updateData);
+                console.log(`✅ Updated order status to paid: ${orderId}`);
+                
+            } catch (firestoreError) {
+                console.error('❌ Firestore update error:', firestoreError);
+                // Continue with the response even if Firestore update fails
+                return res.status(200).json({ 
+                    success: true,
+                    orderId,
+                    razorpayPaymentId,
+                    warning: 'Payment verified but order status update failed',
+                    error: firestoreError.message
                 });
             }
-            
-            res.json({ 
-                success: true,
-                orderId,
-                razorpayPaymentId,
-                message: 'Payment verified successfully'
-            });
-            
-        } catch (firestoreError) {
-            console.error('Firestore update error:', firestoreError);
-            // Even if Firestore update fails, we still confirm the payment was successful
-            res.json({ 
-                success: true,
-                orderId,
-                razorpayPaymentId,
-                warning: 'Payment verified but order status update failed',
-                error: firestoreError.message
-            });
+        } else {
+            console.warn('Firestore not available - skipping order status update');
         }
+        
+        // Return success response
+        res.json({ 
+            success: true,
+            orderId,
+            razorpayPaymentId,
+            message: 'Payment verified successfully',
+            timestamp: new Date().toISOString()
+        });
 
     } catch (error) {
         console.error('Payment verification error:', error);
