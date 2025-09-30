@@ -495,6 +495,54 @@
                     const buttonText = submitBtn.querySelector('span');
                     if (buttonText) buttonText.textContent = 'Processing...';
                 }
+                
+                // Get form data
+                const formData = new FormData(checkoutForm);
+                const customerData = {
+                    name: `${formData.get('first-name')} ${formData.get('last-name')}`.trim(),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    address: formData.get('address'),
+                    city: formData.get('city'),
+                    state: formData.get('state'),
+                    pincode: formData.get('pincode'),
+                    country: formData.get('country') || 'India'
+                };
+                
+                // Get cart items and total (implement getCartItems function)
+                const cartItems = getCartItems();
+                const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                // Create order in Firestore
+                try {
+                    const orderRef = await addDoc(collection(db, 'orders'), {
+                        customer: customerData,
+                        items: cartItems,
+                        status: 'pending',
+                        payment: {
+                            method: 'razorpay',
+                            status: 'pending'
+                        },
+                        total: total,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                    
+                    // Process payment
+                    await handleRazorpayPayment(orderRef.id, total, customerData);
+                    
+                } catch (error) {
+                    console.error('Error creating order:', error);
+                    alert('Failed to create order. Please try again.');
+                    
+                    // Reset button state
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        loadingSpinner.classList.add('hidden');
+                        const buttonText = submitBtn.querySelector('span');
+                        if (buttonText) buttonText.textContent = 'Continue to Payment';
+                    }
+                }
 
                 try {
                     // Get form values
@@ -631,11 +679,14 @@
                 }
             }
 
+            // Define API base URL - use Render URL in production, localhost in development
+            const API_BASE_URL = 'https://alh-backend.onrender.com';
+            
             // Handle Razorpay payment
             async function handleRazorpayPayment(orderId, amount, customer) {
                 try {
                     // Create Razorpay order on your server
-                    const response = await fetch('/api/create-razorpay-order', {
+                    const response = await fetch(`${API_BASE_URL}/api/create-razorpay-order`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -643,7 +694,12 @@
                         body: JSON.stringify({
                             amount: amount * 100, // Convert to paise
                             currency: 'INR',
-                            receipt: orderId
+                            receipt: orderId,
+                            orderData: {
+                                customer: customer,
+                                items: getCartItems(),
+                                total: amount
+                            }
                         })
                     });
 
@@ -668,7 +724,7 @@
                             
                             try {
                                 // Verify payment on your server
-                                const verification = await fetch('http://localhost:3000/api/verify-payment', {
+                                const verification = await fetch(`${API_BASE_URL}/api/verify-payment`, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',

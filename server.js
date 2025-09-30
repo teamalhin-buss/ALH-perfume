@@ -1,4 +1,34 @@
-require('dotenv').config();
+// Core dependencies
+const fs = require('fs');
+const path = require('path');
+
+// 1. Load environment variables with explicit path
+const envPath = path.resolve(__dirname, '.env');
+
+// 2. Check if .env file exists
+if (!fs.existsSync(envPath)) {
+    console.error('❌ Error: .env file not found at:', envPath);
+    console.log('Current working directory:', process.cwd());
+    console.log('Directory contents:', fs.readdirSync(__dirname).join(', '));
+    process.exit(1);
+}
+
+// 3. Load environment variables
+console.log('Loading .env file from:', envPath);
+const envConfig = require('dotenv').config({ path: envPath });
+
+if (envConfig.error) {
+    console.error('❌ Error loading .env file:', envConfig.error);
+    process.exit(1);
+}
+
+// 4. Verify loaded environment variables
+console.log('Environment variables loaded successfully');
+console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID ? '***' + process.env.FIREBASE_PROJECT_ID.slice(-4) : 'Not set');
+console.log('FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL ? '***' + process.env.FIREBASE_CLIENT_EMAIL.split('@')[1] : 'Not set');
+console.log('FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY ? '*** (private key loaded)' : 'Not set');
+
+// Core dependencies
 const express = require('express');
 const Razorpay = require('razorpay');
 const cors = require('cors');
@@ -10,58 +40,172 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Log environment status
+console.log('\n=== Environment Status ===');
+console.log(`Node Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`Port: ${process.env.PORT || '10000'}`);
+console.log(`Razorpay Key ID: ${process.env.RAZORPAY_KEY_ID ? '***' + process.env.RAZORPAY_KEY_ID.slice(-4) : '❌ Not set'}`);
+console.log(`Firebase Project: ${process.env.FIREBASE_PROJECT_ID || '❌ Not set'}`);
+console.log('=========================\n');
+
+// Validate required environment variables
+const requiredVars = [
+    'RAZORPAY_KEY_ID',
+    'RAZORPAY_KEY_SECRET',
+    'FIREBASE_PROJECT_ID',
+    'FIREBASE_CLIENT_EMAIL',
+    'FIREBASE_PRIVATE_KEY',
+    'FIREBASE_PRIVATE_KEY_ID',
+    'FIREBASE_CLIENT_CERT_URL'
+];
+
+const missingVars = requiredVars.filter(varName => !process.env[varName]);
+if (missingVars.length > 0) {
+    console.error('❌ Missing required environment variables:');
+    missingVars.forEach(varName => console.error(`  - ${varName}`));
+    console.error('\nPlease check your .env file and ensure all required variables are set.\n');
+    process.exit(1);
+}
+
 // Initialize Razorpay with environment variables
 const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || 'rzp_live_RK9GfqxJRiUORI',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || 'Qwz5PXwqJY17MQq83SaLsxA1'
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
-// Initialize Firebase Admin with environment variables
+// Firebase Admin initialization
 let db = null;
 let firebaseInitialized = false;
 
 async function initializeFirebase() {
-    if (firebaseInitialized) return true;
+    // Reset state for re-initialization
+    firebaseInitialized = false;
+    db = null;
+
+    console.log('🚀 Initializing Firebase Admin...');
     
     try {
-        if (!process.env.FIREBASE_PRIVATE_KEY) {
-            console.warn('Firebase Admin not initialized - FIREBASE_PRIVATE_KEY not found in environment variables');
-            return false;
-        }
+        // Verify required environment variables
+        const requiredEnvVars = [
+            'FIREBASE_PROJECT_ID',
+            'FIREBASE_CLIENT_EMAIL',
+            'FIREBASE_PRIVATE_KEY',
+            'FIREBASE_PRIVATE_KEY_ID',
+            'FIREBASE_CLIENT_CERT_URL'
+        ];
 
-        console.log('Initializing Firebase Admin...');
+        const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+        if (missingVars.length > 0) {
+            throw new Error(`Missing required Firebase environment variables: ${missingVars.join(', ')}`);
+        }
         
+        // Format the private key (handle escaped newlines)
+        const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+
         const serviceAccount = {
-            projectId: process.env.FIREBASE_PROJECT_ID || 'alh-perfume',
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\\\n/g, '\n')
+            type: 'service_account',
+            project_id: process.env.FIREBASE_PROJECT_ID,
+            private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+            private_key: privateKey,
+            client_email: process.env.FIREBASE_CLIENT_EMAIL,
+            client_id: process.env.FIREBASE_CLIENT_ID || '',
+            auth_uri: process.env.FIREBASE_AUTH_URI || 'https://accounts.google.com/o/oauth2/auth',
+            token_uri: process.env.FIREBASE_TOKEN_URI || 'https://oauth2.googleapis.com/token',
+            auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_CERT_URL || 'https://www.googleapis.com/oauth2/v1/certs',
+            client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL,
+            universe_domain: 'googleapis.com'
         };
 
-        // Check if Firebase app is already initialized
+        // Initialize Firebase Admin if not already initialized
         if (admin.apps.length === 0) {
             admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
+                credential: admin.credential.cert(serviceAccount),
+                databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
+                storageBucket: `${process.env.FIREBASE_PROJECT_ID}.appspot.com`
             });
+            console.log('✅ Firebase Admin SDK initialized');
         }
-
-        // Test the connection
-        db = admin.firestore();
-        await db.collection('test').doc('connection-test').get();
         
-        console.log('✅ Firebase Admin initialized successfully');
+        // Test Firestore connection
+        db = admin.firestore();
+        // Add a small timeout to ensure connection is established
+        await Promise.race([
+            db.collection('test').doc('connection-test').get(),
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Firestore connection timeout')), 5000)
+            )
+        ]);
+        
+        console.log('✅ Successfully connected to Firestore');
         firebaseInitialized = true;
         return true;
         
     } catch (error) {
-        console.error('❌ Firebase Admin initialization error:', error.message);
+        console.error('❌ Firebase initialization failed:', error.message);
+        if (error.code) console.error('Error code:', error.code);
+        if (error.stack) console.error('Stack trace:', error.stack.split('\n').slice(0, 3).join('\n'));
         db = null;
+        firebaseInitialized = false;
         return false;
     }
 }
 
 // Initialize Firebase when the server starts
-initializeFirebase().catch(error => {
-    console.error('Failed to initialize Firebase:', error);
+const initFirebase = async () => {
+    try {
+        const success = await initializeFirebase();
+        if (success) {
+            console.log('🔥 Firebase initialization completed successfully');
+            firebaseInitialized = true;
+            
+            // Test Firestore connection
+            try {
+                db = admin.firestore();
+                await db.collection('test').doc('connection-test').get();
+                console.log('✅ Successfully connected to Firestore');
+                return true;
+            } catch (firestoreError) {
+                console.error('❌ Firestore connection error:', firestoreError.message);
+                firebaseInitialized = false;
+                return false;
+            }
+        } else {
+            console.warn('⚠️  Firebase initialization completed with warnings');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Firebase initialization failed:', error);
+        firebaseInitialized = false;
+        return false;
+    }
+};
+
+// Start the server after Firebase initialization
+const startServer = async () => {
+    const port = process.env.PORT || 10000;
+    const server = app.listen(port, '0.0.0.0', () => {
+        console.log(`\n🚀 Server running on port ${port}`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🔌 Firebase: ${firebaseInitialized ? '✅ Connected' : '❌ Disconnected'}`);
+        console.log(`💳 Razorpay: ${process.env.RAZORPAY_KEY_ID ? '✅ Configured' : '❌ Not configured'}\n`);
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (err) => {
+        console.error('Unhandled Rejection:', err);
+        server.close(() => process.exit(1));
+    });
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (err) => {
+        console.error('Uncaught Exception:', err);
+        server.close(() => process.exit(1));
+    });
+};
+
+// Initialize Firebase and start the server
+initFirebase().then(() => {
+    startServer();
 });
 
 // Create Razorpay order
@@ -241,10 +385,37 @@ app.get('/', (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+// Health check endpoint
+app.get('/', (req, res) => {
+    res.json({
+        status: 'ok',
+        message: 'ALHH Backend is running',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        services: {
+            firebase: firebaseInitialized ? 'connected' : 'disconnected',
+            razorpay: process.env.RAZORPAY_KEY_ID ? 'configured' : 'not configured'
+        }
+    });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
+// Start the server
+const PORT = process.env.PORT || 10000;
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`\n🚀 Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔌 Firebase: ${firebaseInitialized ? '✅ Connected' : '❌ Disconnected'}`);
+    console.log(`💳 Razorpay: ${process.env.RAZORPAY_KEY_ID ? '✅ Configured' : '❌ Not configured'}\n`);
 });
 
 // Handle unhandled promise rejections
