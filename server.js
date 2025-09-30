@@ -102,16 +102,18 @@ const razorpay = new Razorpay({
 let db = null;
 let firebaseInitialized = false;
 
-async function initializeFirebase() {
+async function initializeFirebase(retryCount = 0) {
     // Reset state for re-initialization
     firebaseInitialized = false;
     db = null;
+    const MAX_RETRIES = 3;
+    const INITIAL_TIMEOUT = 10000; // 10 seconds
 
-    console.log('🚀 Initializing Firebase Admin...');
-    
     try {
+        console.log(`🚀 Initializing Firebase Admin (Attempt ${retryCount + 1}/${MAX_RETRIES + 1})...`);
+        
         // Verify required environment variables
-        const requiredEnvVars = [
+        const requiredVars = [
             'FIREBASE_PROJECT_ID',
             'FIREBASE_CLIENT_EMAIL',
             'FIREBASE_PRIVATE_KEY',
@@ -119,9 +121,9 @@ async function initializeFirebase() {
             'FIREBASE_CLIENT_CERT_URL'
         ];
 
-        const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+        const missingVars = requiredVars.filter(varName => !process.env[varName]);
         if (missingVars.length > 0) {
-            throw new Error(`Missing required Firebase environment variables: ${missingVars.join(', ')}`);
+            throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
         }
         
         // Format the private key (handle escaped newlines)
@@ -141,23 +143,49 @@ async function initializeFirebase() {
             universe_domain: 'googleapis.com'
         };
 
-        // Initialize Firebase Admin if not already initialized
         if (admin.apps.length === 0) {
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-                databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
-                storageBucket: `${process.env.FIREBASE_PROJECT_ID}.appspot.com`
-            });
-            console.log('✅ Firebase Admin SDK initialized');
+            try {
+                admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccount),
+                    databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
+                    storageBucket: `${process.env.FIREBASE_PROJECT_ID}.appspot.com`,
+                    httpAgent: new (require('https').Agent)({ 
+                        keepAlive: true,
+                        timeout: 30000, // 30 seconds
+                        maxSockets: 100
+                    })
+                });
+                console.log('✅ Firebase Admin SDK initialized');
+            } catch (error) {
+                console.error(`❌ Firebase initialization attempt ${retryCount + 1} failed:`, error.message);
+                if (error.code) console.error('Error code:', error.code);
+                if (error.stack) console.error('Stack trace:', error.stack.split('\n').slice(0, 3).join('\n'));
+            }
         }
         
-        // Test Firestore connection
+        // Configure Firestore with increased timeouts
         db = admin.firestore();
-        // Add a small timeout to ensure connection is established
+        try {
+            db.settings({
+                ignoreUndefinedProperties: true,
+                timeout: 30000, // 30 seconds
+                maxIdleTimeout: 60000, // 60 seconds
+                maxConnections: 20
+            });
+        } catch (error) {
+            console.error('Error configuring Firestore:', error.message);
+            if (error.code) console.error('Error code:', error.code);
+            if (error.stack) console.error('Stack trace:', error.stack.split('\n').slice(0, 3).join('\n'));
+        }
+        
+        // Test connection with timeout
+        const timeout = Math.min(INITIAL_TIMEOUT * Math.pow(2, retryCount), 60000); // Cap at 60 seconds
+        console.log(`⏳ Testing Firestore connection (timeout: ${timeout}ms)...`);
+        
         await Promise.race([
-            db.collection('test').doc('connection-test').get(),
+            db.collection('test').doc('connection-test').get({ timeout: 10000 }),
             new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Firestore connection timeout')), 5000)
+                setTimeout(() => reject(new Error(`Firestore connection timeout after ${timeout}ms`)), timeout)
             )
         ]);
         
@@ -166,9 +194,21 @@ async function initializeFirebase() {
         return true;
         
     } catch (error) {
-        console.error('❌ Firebase initialization failed:', error.message);
+        console.error(`❌ Firebase initialization attempt ${retryCount + 1} failed:`, error.message);
+        
+        if (retryCount < MAX_RETRIES) {
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff, max 10s
+            console.log(`🔄 Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return initializeFirebase(retryCount + 1);
+        }
+        
+        console.error('❌ Max retries reached. Firebase initialization failed.');
         if (error.code) console.error('Error code:', error.code);
         if (error.stack) console.error('Stack trace:', error.stack.split('\n').slice(0, 3).join('\n'));
+        
+        // Even if Firestore fails, we'll continue running the server in a degraded mode
+        console.warn('⚠️  Running in degraded mode without Firestore. Some features may not work.');
         db = null;
         firebaseInitialized = false;
         return false;
