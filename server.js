@@ -126,8 +126,21 @@ async function initializeFirebase(retryCount = 0) {
             throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
         }
         
-        // Format the private key (handle escaped newlines)
-        const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+        // Format the private key (handle escaped newlines and quotes)
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+        
+        // Remove any surrounding quotes if present
+        if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+            privateKey = privateKey.substring(1, privateKey.length - 1);
+        }
+        
+        // Replace escaped newlines with actual newlines
+        privateKey = privateKey.replace(/\\n/g, '\n');
+        
+        // Verify the private key format
+        if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+            throw new Error('Invalid private key format: Missing BEGIN PRIVATE KEY header');
+        }
 
         const serviceAccount = {
             type: 'service_account',
@@ -143,23 +156,30 @@ async function initializeFirebase(retryCount = 0) {
             universe_domain: 'googleapis.com'
         };
 
+        // Initialize Firebase Admin if not already initialized
         if (admin.apps.length === 0) {
             try {
+                // Try with the current configuration first
                 admin.initializeApp({
                     credential: admin.credential.cert(serviceAccount),
                     databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
-                    storageBucket: `${process.env.FIREBASE_PROJECT_ID}.appspot.com`,
-                    httpAgent: new (require('https').Agent)({ 
-                        keepAlive: true,
-                        timeout: 30000, // 30 seconds
-                        maxSockets: 100
-                    })
+                    storageBucket: `${process.env.FIREBASE_PROJECT_ID}.appspot.com`
                 });
                 console.log('✅ Firebase Admin SDK initialized');
-            } catch (error) {
-                console.error(`❌ Firebase initialization attempt ${retryCount + 1} failed:`, error.message);
-                if (error.code) console.error('Error code:', error.code);
-                if (error.stack) console.error('Stack trace:', error.stack.split('\n').slice(0, 3).join('\n'));
+            } catch (initError) {
+                console.error('❌ Firebase Admin initialization error:', initError.message);
+                // Try an alternative initialization without extra options
+                try {
+                    admin.initializeApp({
+                        credential: admin.credential.cert(serviceAccount)
+                    });
+                    console.log('✅ Firebase Admin SDK initialized with minimal configuration');
+                } catch (alternativeInitError) {
+                    console.error('❌ Firebase Admin initialization error (alternative attempt):', alternativeInitError.message);
+                    if (alternativeInitError.code) console.error('Error code:', alternativeInitError.code);
+                    if (alternativeInitError.stack) console.error('Stack trace:', alternativeInitError.stack.split('\n').slice(0, 3).join('\n'));
+                    throw alternativeInitError;
+                }
             }
         }
         
@@ -176,6 +196,7 @@ async function initializeFirebase(retryCount = 0) {
             console.error('Error configuring Firestore:', error.message);
             if (error.code) console.error('Error code:', error.code);
             if (error.stack) console.error('Stack trace:', error.stack.split('\n').slice(0, 3).join('\n'));
+            throw error;
         }
         
         // Test connection with timeout
